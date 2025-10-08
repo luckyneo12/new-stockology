@@ -48,7 +48,7 @@ const CalculatorSection = () => {
     const transactionCharges = (turnover * 0.00297) / 100;
 
     // Clearing Charges (Flat ₹0.01)
-    const clearingCharges = (turnover * 0.00000001) / 100;
+    const clearingCharges = 0.01;
 
     // GST (18% of Brokerage + Transaction Charges + Clearing Charges)
     const gst = ((brokerage + transactionCharges + clearingCharges) * 18) / 100;
