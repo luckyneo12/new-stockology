@@ -53,7 +53,7 @@ const TermsAndConditions = () => {
               </ul>
               <div className="mt-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
                 <p className="text-light md:text-lg">
-                  <span className="font-semibold text-primary">Important:</span> Upon receiving such a notification, Stockology will take prompt action to suspend or restrict the Client's account to prevent further unauthorized activity. However, the Client will remain responsible for all transactions executed prior to such notification.
+                  <span className="font-semibold text-primary">Important:</span> Upon receiving such a notification, Stockology will take prompt action to suspend or restrict the Client&apos;s account to prevent further unauthorized activity. However, the Client will remain responsible for all transactions executed prior to such notification.
                 </p>
               </div>
               <p className="text-light mt-4 md:text-lg">
@@ -69,7 +69,7 @@ const TermsAndConditions = () => {
                 <li>The transaction password is required each time you place an order and acts as an authentication measure from our secured system.</li>
                 <li>For added safety, the transaction password automatically expires every 30 days, prompting you to update it regularly.</li>
                 <li>You may change your passwords online at any time.</li>
-                <li>We recommend using the "Log Out" button after each session to securely exit your account.</li>
+                <li>We recommend using the &quot;Log Out&quot; button after each session to securely exit your account.</li>
               </ul>
             </section>
 
