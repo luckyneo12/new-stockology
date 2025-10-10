@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface CalculationResult {
   turnover: number;
@@ -17,6 +17,14 @@ interface CalculationResult {
   netPL: number;
 }
 
+interface StockResult {
+  symbol: string;
+  shortname: string;
+  longname: string;
+  exchDisp: string;
+  quoteType: string;
+}
+
 const CalculatorSection = () => {
   const [tradeType, setTradeType] = useState<"intraday" | "delivery">(
     "intraday"
@@ -25,6 +33,204 @@ const CalculatorSection = () => {
   const [buyPrice, setBuyPrice] = useState<string>("3025.70");
   const [sellPrice, setSellPrice] = useState<string>("3026.80");
   const [brokerageRate, setBrokerageRate] = useState<string>("0.03");
+  
+  // Stock search states
+  const [selectedStock, setSelectedStock] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<StockResult[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [showResults, setShowResults] = useState<boolean>(false);
+  const [selectedStockData, setSelectedStockData] = useState<StockResult | null>(null);
+  const [currentStockPrice, setCurrentStockPrice] = useState<number | null>(null);
+  // Google Sheet derived stocks
+  const [sheetStocks, setSheetStocks] = useState<StockResult[]>([]);
+  const [isLoadingSheet, setIsLoadingSheet] = useState<boolean>(false);
+
+  // Stock search function - only uses Google Sheet data
+  const searchStocks = (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    
+    // Filter from Google Sheet data
+    const filtered = sheetStocks.filter((stock) => {
+      const q = query.toLowerCase();
+      return (
+        (stock.shortname && stock.shortname.toLowerCase().includes(q)) ||
+        (stock.longname && stock.longname.toLowerCase().includes(q)) ||
+        (stock.symbol && stock.symbol.toLowerCase().includes(q))
+      );
+    });
+    
+    setSearchResults(filtered);
+    setShowResults(true);
+    setIsSearching(false);
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    // Clear selected stock when user types
+    if (query !== selectedStock) {
+      setSelectedStock("");
+    }
+    
+    searchStocks(query);
+  };
+
+  // Get stock price from Google Sheet data
+  const getStockPrice = (stock: StockResult): number => {
+    // Price is stored in the stock object from sheet
+    return (stock as any).price || 0;
+  };
+
+  // Handle stock selection
+  const handleStockSelect = (stock: StockResult) => {
+    const stockName = `${stock.shortname || stock.longname}`;
+    setSelectedStock(stockName);
+    setSearchQuery(stockName);
+    setSelectedStockData(stock);
+    setShowResults(false);
+
+    // Get price from sheet and update buy/sell prices
+    const price = getStockPrice(stock);
+    if (price > 0) {
+      setCurrentStockPrice(price);
+      setBuyPrice(price.toFixed(2));
+      setSellPrice((price + 1).toFixed(2));
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.stock-search-container')) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Set default stock from sheet when data loads
+  useEffect(() => {
+    if (sheetStocks.length > 0 && !selectedStockData) {
+      const firstStock = sheetStocks[0];
+      setSelectedStockData(firstStock);
+      setSelectedStock(firstStock.shortname);
+      setSearchQuery(firstStock.shortname);
+      
+      const price = getStockPrice(firstStock);
+      if (price > 0) {
+        setCurrentStockPrice(price);
+        setBuyPrice(price.toFixed(2));
+        setSellPrice((price + 1).toFixed(2));
+      }
+    }
+  }, [sheetStocks]);
+
+  // Load company list from Google Sheets (first sheet) via Google Visualization API
+  useEffect(() => {
+    const SHEET_ID = '14MZurSHSss8d2SZd1Fh12E2FZKQ9pFF5ln0-c6VUHhk';
+    // If the sheet is publicly accessible (Anyone with link can view), this works without API key
+    const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+    const parseGvizJson = (text: string) => {
+      // text is like: "/*O_o*/\ngoogle.visualization.Query.setResponse({...});"
+      const start = text.indexOf('{');
+      const end = text.lastIndexOf('}');
+      if (start === -1 || end === -1) return null;
+      try {
+        return JSON.parse(text.substring(start, end + 1));
+      } catch {
+        return null;
+      }
+    };
+
+    const normalizeRowToStock = (rowObj: Record<string, any>): StockResult | null => {
+      // Map exact columns from your Google Sheet:
+      // Column A: "Comany symbols" (ticker)
+      // Column B: Full NSE symbol (e.g., "NSE:20MICRONS")
+      // Column C: "Company name" (full name)
+      // Column D: "price"
+      
+      const companyName = rowObj['Company name'] || rowObj['company name'] || rowObj['C'];
+      const shortSymbol = rowObj['Comany symbols'] || rowObj['comany symbols'] || rowObj['A'];
+      const fullSymbol = rowObj['B']; // NSE:SYMBOL format
+      const price = rowObj['price'] || rowObj['D'];
+
+      if (!companyName || !shortSymbol) return null;
+
+      // Extract exchange from column B if available (e.g., "NSE:20MICRONS" -> "NSE")
+      let exchange = 'NSE';
+      let cleanSymbol = shortSymbol;
+      if (fullSymbol && typeof fullSymbol === 'string') {
+        const parts = fullSymbol.split(':');
+        if (parts.length === 2) {
+          exchange = parts[0]; // "NSE"
+          cleanSymbol = parts[1]; // "20MICRONS"
+        }
+      }
+
+      return {
+        symbol: `${cleanSymbol}.NS`,
+        shortname: companyName,
+        longname: companyName,
+        exchDisp: exchange,
+        quoteType: 'EQUITY',
+        price: parseFloat(price) || 0, // Store price from sheet
+      } as StockResult & { price: number };
+    };
+
+    const loadSheet = async () => {
+      setIsLoadingSheet(true);
+      try {
+        const res = await fetch(GVIZ_URL);
+        const text = await res.text();
+        const json = parseGvizJson(text);
+        if (!json || !json.table) return;
+        const cols: string[] = (json.table.cols || []).map((c: any) => c.label || c.id);
+        const rows: any[] = (json.table.rows || []);
+        const mapped: StockResult[] = [];
+        for (const r of rows) {
+          const obj: Record<string, any> = {};
+          const cells = r.c || [];
+          cols.forEach((label: string, idx: number) => {
+            const cell = cells[idx];
+            obj[label] = cell ? cell.v : null;
+          });
+          const st = normalizeRowToStock(obj);
+          if (st) mapped.push(st);
+        }
+        // Deduplicate by symbol + name
+        const seen = new Set<string>();
+        const unique = mapped.filter((s) => {
+          const key = `${s.symbol}|${s.shortname}`.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setSheetStocks(unique);
+      } catch (e) {
+        // Silent fail; UI will fall back to mock list
+        console.warn('Failed to load Google Sheet, falling back to defaults');
+      } finally {
+        setIsLoadingSheet(false);
+      }
+    };
+
+    loadSheet();
+  }, []);
 
   const calculateCharges = (): CalculationResult => {
     const qty = parseFloat(quantity) || 0;
@@ -48,7 +254,7 @@ const CalculatorSection = () => {
     const transactionCharges = (turnover * 0.00297) / 100;
 
     // Clearing Charges (Flat ₹0.01)
-    const clearingCharges = 0.01;
+    const clearingCharges = 0.02;
 
     // GST (18% of Brokerage + Transaction Charges + Clearing Charges)
     const gst = ((brokerage + transactionCharges + clearingCharges) * 18) / 100;
@@ -129,34 +335,96 @@ const CalculatorSection = () => {
                 </button>
               </div>
 
+              {/* Stock Information Display */}
+              {selectedStockData && currentStockPrice && (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-gray-800">{selectedStockData.shortname}</h3>
+                      <p className="text-sm text-gray-600">{selectedStockData.symbol}</p>
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
+                        {selectedStockData.exchDisp}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-gray-900">
+                        ₹{currentStockPrice.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Stock Search */}
-              <div className="mb-6">
+              <div className="mb-6 relative stock-search-container">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Stock
                 </label>
                 <div className="relative">
                   <input
                     type="text"
-                    value="TATA CONSULTANCY SERVICES BSE"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
+                    placeholder="Search for stocks (e.g. TCS, SBI, Reliance)"
                   />
                   <div className="absolute right-3 top-3">
-                    <svg
-                      className="w-5 h-5 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
+                    {isSearching ? (
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg
+                        className="w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    )}
                   </div>
                 </div>
+
+                {/* Search Results Dropdown */}
+                {showResults && searchResults.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {searchResults.map((stock, index) => (
+                      <div
+                        key={`${stock.symbol}-${index}`}
+                        onClick={() => handleStockSelect(stock)}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {stock.shortname || stock.longname}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {stock.symbol}
+                            </div>
+                          </div>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            {stock.exchDisp === "Bombay" ? "BSE" : stock.exchDisp}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No Results Message */}
+                {showResults && searchResults.length === 0 && searchQuery.length >= 2 && !isSearching && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
+                    <div className="text-center text-gray-500">
+                      No stocks found. Try searching with a different term.
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Input Fields */}
@@ -185,7 +453,14 @@ const CalculatorSection = () => {
                     <input
                       type="number"
                       value={buyPrice}
-                      onChange={(e) => setBuyPrice(e.target.value)}
+                      onChange={(e) => {
+                        const newBuyPrice = e.target.value;
+                        setBuyPrice(newBuyPrice);
+                        // Auto-update sell price to be ₹1 more
+                        if (newBuyPrice && !isNaN(parseFloat(newBuyPrice))) {
+                          setSellPrice((parseFloat(newBuyPrice) + 1).toFixed(2));
+                        }
+                      }}
                       className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="0.00"
                       step="0.01"
