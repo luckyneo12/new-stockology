@@ -23,6 +23,7 @@ interface StockResult {
   longname: string;
   exchDisp: string;
   quoteType: string;
+  price?: number;
 }
 
 const CalculatorSection = () => {
@@ -44,7 +45,6 @@ const CalculatorSection = () => {
   const [currentStockPrice, setCurrentStockPrice] = useState<number | null>(null);
   // Google Sheet derived stocks
   const [sheetStocks, setSheetStocks] = useState<StockResult[]>([]);
-  const [isLoadingSheet, setIsLoadingSheet] = useState<boolean>(false);
 
   // Stock search function - only uses Google Sheet data
   const searchStocks = (query: string) => {
@@ -87,7 +87,7 @@ const CalculatorSection = () => {
   // Get stock price from Google Sheet data
   const getStockPrice = (stock: StockResult): number => {
     // Price is stored in the stock object from sheet
-    return (stock as any).price || 0;
+    return stock.price || 0;
   };
 
   // Handle stock selection
@@ -130,13 +130,14 @@ const CalculatorSection = () => {
       setSelectedStock(firstStock.shortname);
       setSearchQuery(firstStock.shortname);
       
-      const price = getStockPrice(firstStock);
+      const price = firstStock.price || 0;
       if (price > 0) {
         setCurrentStockPrice(price);
         setBuyPrice(price.toFixed(2));
         setSellPrice((price + 1).toFixed(2));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetStocks]);
 
   // Load company list from Google Sheets (first sheet) via Google Visualization API
@@ -157,19 +158,22 @@ const CalculatorSection = () => {
       }
     };
 
-    const normalizeRowToStock = (rowObj: Record<string, any>): StockResult | null => {
+    const normalizeRowToStock = (rowObj: Record<string, string | number | null>): StockResult | null => {
       // Map exact columns from your Google Sheet:
       // Column A: "Comany symbols" (ticker)
       // Column B: Full NSE symbol (e.g., "NSE:20MICRONS")
       // Column C: "Company name" (full name)
       // Column D: "price"
       
-      const companyName = rowObj['Company name'] || rowObj['company name'] || rowObj['C'];
-      const shortSymbol = rowObj['Comany symbols'] || rowObj['comany symbols'] || rowObj['A'];
+      const companyNameRaw = rowObj['Company name'] || rowObj['company name'] || rowObj['C'];
+      const shortSymbolRaw = rowObj['Comany symbols'] || rowObj['comany symbols'] || rowObj['A'];
       const fullSymbol = rowObj['B']; // NSE:SYMBOL format
       const price = rowObj['price'] || rowObj['D'];
 
-      if (!companyName || !shortSymbol) return null;
+      if (!companyNameRaw || !shortSymbolRaw) return null;
+
+      const companyName = String(companyNameRaw);
+      const shortSymbol = String(shortSymbolRaw);
 
       // Extract exchange from column B if available (e.g., "NSE:20MICRONS" -> "NSE")
       let exchange = 'NSE';
@@ -188,22 +192,21 @@ const CalculatorSection = () => {
         longname: companyName,
         exchDisp: exchange,
         quoteType: 'EQUITY',
-        price: parseFloat(price) || 0, // Store price from sheet
-      } as StockResult & { price: number };
+        price: typeof price === 'number' ? price : parseFloat(String(price)) || 0,
+      };
     };
 
     const loadSheet = async () => {
-      setIsLoadingSheet(true);
       try {
         const res = await fetch(GVIZ_URL);
         const text = await res.text();
         const json = parseGvizJson(text);
         if (!json || !json.table) return;
-        const cols: string[] = (json.table.cols || []).map((c: any) => c.label || c.id);
-        const rows: any[] = (json.table.rows || []);
+        const cols: string[] = (json.table.cols || []).map((c: { label?: string; id?: string }) => c.label || c.id || '');
+        const rows: Array<{ c?: Array<{ v: string | number | null } | null> }> = (json.table.rows || []);
         const mapped: StockResult[] = [];
         for (const r of rows) {
-          const obj: Record<string, any> = {};
+          const obj: Record<string, string | number | null> = {};
           const cells = r.c || [];
           cols.forEach((label: string, idx: number) => {
             const cell = cells[idx];
@@ -221,11 +224,9 @@ const CalculatorSection = () => {
           return true;
         });
         setSheetStocks(unique);
-      } catch (e) {
-        // Silent fail; UI will fall back to mock list
-        console.warn('Failed to load Google Sheet, falling back to defaults');
-      } finally {
-        setIsLoadingSheet(false);
+      } catch {
+        // Silent fail; UI will fall back to empty list
+        console.warn('Failed to load Google Sheet');
       }
     };
 
