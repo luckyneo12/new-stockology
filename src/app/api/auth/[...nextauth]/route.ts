@@ -1,11 +1,10 @@
 // @ts-nocheck
-/* eslint-disable */
-import NextAuth from 'next-auth';
+import NextAuth from 'next-auth/next';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
-const handler = NextAuth({
+const authOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -13,7 +12,6 @@ const handler = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      // @ts-ignore
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null;
@@ -49,30 +47,28 @@ const handler = NextAuth({
     }),
   ],
   session: {
-    // @ts-ignore
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
   },
   pages: {
     signIn: '/admin/login',
   },
   callbacks: {
-    // @ts-ignore
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    // @ts-ignore
     async session({ session, token }) {
       if (session.user) {
-        // @ts-ignore
-        session.user.id = token.id;
+        (session.user as { id?: string }).id = token.id as string;
       }
       return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
