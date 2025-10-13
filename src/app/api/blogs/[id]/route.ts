@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 
 // GET single blog by ID
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -82,7 +82,7 @@ export async function PUT(
       );
     }
     
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (title) {
       updateData.title = title;
@@ -126,7 +126,7 @@ export async function PUT(
 
 // DELETE blog
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

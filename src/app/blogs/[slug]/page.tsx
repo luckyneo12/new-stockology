@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, User, Tag, ArrowLeft, Share2 } from 'lucide-react';
-import { Metadata } from 'next';
+import { Calendar, User, ArrowLeft, Share2 } from 'lucide-react';
 
 interface Blog {
   id: number;
@@ -27,6 +26,7 @@ export default function BlogDetailPage({ params }: { params: { slug: string } })
 
   useEffect(() => {
     fetchBlog();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.slug]);
 
   const fetchBlog = async () => {
@@ -45,8 +45,8 @@ export default function BlogDetailPage({ params }: { params: { slug: string } })
       }
       
       setBlog(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }

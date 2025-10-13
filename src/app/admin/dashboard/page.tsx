@@ -38,6 +38,7 @@ export default function AdminDashboard() {
     if (status === 'authenticated') {
       fetchBlogs();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, page, searchTerm, categoryFilter]);
 
   const fetchBlogs = async () => {

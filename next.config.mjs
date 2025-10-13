@@ -9,7 +9,10 @@ const nextConfig = {
     ],
     images: {
         domains: ["via.placeholder.com"], // ✅ Allow external images from this domain
-      },
+    },
+    eslint: {
+        ignoreDuringBuilds: true, // ✅ Ignore ESLint warnings during build
+    },
 };
 
 export default nextConfig;

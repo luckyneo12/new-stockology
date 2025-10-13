@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Calendar, User, Tag, TrendingUp } from 'lucide-react';
+import { Search, Calendar, User } from 'lucide-react';
 
 interface Blog {
   id: number;
@@ -143,7 +143,7 @@ export default function BlogsPage() {
           <>
             {/* Blog Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {blogs.map((blog, index) => (
+              {blogs.map((blog) => (
                 <article
                   key={blog.id}
                   className="group bg-white rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer border border-gray-100"

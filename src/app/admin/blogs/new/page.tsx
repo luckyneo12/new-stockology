@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 
 export default function NewBlog() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -83,8 +83,8 @@ export default function NewBlog() {
       }
 
       router.push('/admin/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }

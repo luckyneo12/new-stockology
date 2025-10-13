@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         description: blog.excerpt || '',
       },
     };
-  } catch (error) {
+  } catch {
     return {
       title: 'Blog | Stockology',
       description: 'Stockology blog posts',

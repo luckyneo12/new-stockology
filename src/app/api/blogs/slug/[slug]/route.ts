@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 
 // GET single blog by slug (for public pages)
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {

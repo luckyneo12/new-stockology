@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 
 export default function EditBlog({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
@@ -29,6 +29,7 @@ export default function EditBlog({ params }: { params: { id: string } }) {
     } else if (status === 'unauthenticated') {
       router.push('/admin/login');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, params.id]);
 
   const fetchBlog = async () => {
@@ -49,8 +50,8 @@ export default function EditBlog({ params }: { params: { id: string } }) {
       if (blog.image) {
         setImagePreview(blog.image);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setFetching(false);
     }
@@ -108,8 +109,8 @@ export default function EditBlog({ params }: { params: { id: string } }) {
       }
 
       router.push('/admin/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }

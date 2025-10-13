@@ -3,7 +3,6 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import { navData } from "../navData";
-import { ShimmerButtonDemo } from "./Dematebutton";
 import { useRouter } from "next/navigation";
 
 const Navbar = () => {
