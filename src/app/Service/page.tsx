@@ -98,11 +98,13 @@ const Page = () => {
   <EquityBroking/>
 </div>
 
-<div className="py-2">
+<div className="py-2" >
   <IPO/>
 </div>
 
+  <div id="Mutual-funds">
   <MutualFunds/>
+  </div>
 
 
 <div className="py-2">

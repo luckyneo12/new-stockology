@@ -20,8 +20,8 @@ const Navbar = () => {
   };
 
   return (
-    <div className="container mx-auto  ">
-      <section className="header fixed top-0 z-[1000]  container w-full  shadow-lg bg-gradient-to-r from-red-50 to-green-50   text-gray-900  h-[100px] py-2 flex justify-evenly items-center px-4">
+    <div className="container mx-auto">
+      <section className="header fixed top-0 z-[1000] container w-full shadow-md bg-white border-b border-gray-200 text-gray-900 h-[80px] py-2 flex justify-between items-center px-6">
 {/* Hamburger Icon for Mobile */}
 <div className="md:hidden flex items-center">
           <button
@@ -68,9 +68,8 @@ const Navbar = () => {
           <img
             src="/stklogo.png"
             alt="Logo"
-            className="md:w-28 md:h-24 h-16 w-16 py-2 object-fill"
+            className="md:w-24 md:h-20 h-14 w-14 object-contain"
           />
-          {/* <h1 className=" text-lg font-bold">Stockology</h1> */}
         </div>
 
        
@@ -79,8 +78,8 @@ const Navbar = () => {
         <nav
           className={`${
             showMobileMenu
-              ? "flex flex-col absolute bg-gray-100 w-full top-[100px]  left-0 z-[1000] md:flex md:static md:flex-row"
-              : "hidden md:flex"
+              ? "flex flex-col absolute bg-white w-full top-[80px] left-0 z-[1000] md:flex md:static md:flex-row shadow-lg md:shadow-none"
+              : "hidden md:flex md:items-center md:gap-1"
           }`}
         >
           {navData.map((item) => (
@@ -104,16 +103,16 @@ const Navbar = () => {
                     ? toggleDropdown(Number(item.id))
                     : (setShowMobileMenu(false), handleClick(item.href))
                 }
-                className=" px-4 py-2 md:text-lg hover:bg-white rounded-full hover:text-black  font-medium transition duration-300 w-full text-left flex justify-between items-center"
+                className="px-4 py-2 text-sm font-medium hover:text-green-600 transition duration-300 w-full md:w-auto text-left flex justify-between items-center"
               >
                 {item.label}
-                {item.type === "dropdown" && <span className="ml-2">▼</span>}
+                {item.type === "dropdown" && <span className="ml-1 text-xs">▼</span>}
               </button>
 
               {/* Dropdown Menu */}
               {item.type === "dropdown" && showDropdown === item.id && (
                 <ul
-                  className={`absolute top-10 left-0 bg-white shadow-md rounded-lg z-[1000] text-black text-left  w-[150px] transition-opacity duration-300 ease-in-out ${
+                  className={`absolute top-12 left-0 bg-white shadow-xl rounded-xl z-[1000] text-black text-left w-[180px] border border-gray-100 transition-opacity duration-300 ease-in-out ${
                     showDropdown === item.id
                       ? "opacity-100 visible"
                       : "opacity-0 invisible"
@@ -122,7 +121,7 @@ const Navbar = () => {
                   {item.subItems?.map((subItem) => (
                     <li
                       key={subItem.id}
-                      className="hover:bg-gray-200 px-4 py-2 transition-colors duration-300"
+                      className="hover:bg-green-50 px-4 py-3 transition-colors duration-300 first:rounded-t-xl last:rounded-b-xl"
                     >
                       <Link
                         href={subItem.href}
@@ -140,8 +139,10 @@ const Navbar = () => {
             </div>
           ))}
         </nav>
-        <div>
-          <ShimmerButtonDemo text="Open Demat Account" />
+        <div className="hidden md:block">
+          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-semibold transition shadow-md">
+            Join Now
+          </button>
         </div>
       </section>
     </div>

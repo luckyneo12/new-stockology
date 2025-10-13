@@ -1,15 +1,17 @@
 export const footerData = {
     services: [
-      { name: "Broking", path: "/services/broking" },
-      { name: "Mutual funds", path: "/services/Mutual-funds" },
-      { name: "Mobile & online trading platform", path: "/services/Mobile-&-online-trading-platform" },
-      { name: "Distribution", path: "/services/distribution" },
-      { name: "Education", path: "/services/Education" },
+      // { name: "Broking", path: "/services/broking" },
+      { name: "Mutual funds", path: "/Service/#Mutual-funds" },
+      { name: "Mobile & online trading platform", path: "/App" },
+      // { name: "Distribution", path: "/services/distribution" },
+      // { name: "Education", path: "/services/Education" },
     ],
     company: [
-      { name: "Our Team", path: "/company/team" },
-      { name: "Investor", path: "/company/investor" },
+      // { name: "Our Team", path: "/company/team" },
+      // { name: "Investor", path: "/company/investor" },
       { name: "Calculator", path: "/Calculator" },
+      { name: "Blog", path: "/blogs" },
+
     ],
     // offering: [
     //   { name: "Technical", path: "/offering/technical" },
